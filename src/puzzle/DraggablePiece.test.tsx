@@ -7,8 +7,9 @@ import { PIECE_SCALE } from './geometry';
 
 beforeEach(() => {
   vi.useFakeTimers();
+  vi.setSystemTime(0);
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
-    setTimeout(() => callback(0), 16),
+    setTimeout(() => callback(Date.now()), 16),
   );
   vi.stubGlobal('cancelAnimationFrame', clearTimeout);
   HTMLElement.prototype.setPointerCapture = vi.fn();
@@ -83,10 +84,12 @@ describe('pointer drag lifecycle', () => {
   it('returns a wrong piece and restores its source after the animation', () => {
     const { button, onPlace } = setup();
     start(button);
+    fireEvent.pointerMove(button, { ...pointer, clientX: 350, clientY: 150 });
+    vi.advanceTimersByTime(64);
     fireEvent.pointerUp(button, { ...pointer, clientX: 350, clientY: 150 });
     expect(onPlace).not.toHaveBeenCalled();
     expect(document.querySelector('.drag-ghost')).not.toBeNull();
-    vi.advanceTimersByTime(200);
+    vi.advanceTimersByTime(1000);
     expect(document.querySelector('.drag-ghost')).toBeNull();
     expect(button.classList.contains('drag-source')).toBe(false);
   });
@@ -122,5 +125,28 @@ describe('pointer drag lifecycle', () => {
     fireEvent.click(button, { detail: 0 });
     expect(onSelect).toHaveBeenCalledTimes(2);
     expect(onPlace).not.toHaveBeenCalled();
+  });
+  it('uses the finger position for snapping while the spring is still catching up', () => {
+    const { button, onPlace } = setup();
+    start(button);
+    fireEvent.pointerMove(button, { ...pointer, clientX: 190, clientY: 150 });
+    vi.advanceTimersByTime(16);
+    fireEvent.pointerUp(button, { ...pointer, clientX: 190, clientY: 150 });
+    expect(onPlace).toHaveBeenCalledExactlyOnceWith(0);
+    expect(document.querySelector('.drag-ghost')).toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('removes spring, tilt and animated return when reduced motion is enabled', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    const { button, onPlace } = setup();
+    start(button);
+    fireEvent.pointerMove(button, { ...pointer, clientX: 350, clientY: 150 });
+    const ghost = document.querySelector('.drag-ghost') as HTMLElement;
+    expect(ghost.style.transform).toContain('translate3d(272.000px,72.000px,0)');
+    expect(ghost.style.transform).toContain('rotateZ(0.000deg) scale(1.0000)');
+    fireEvent.pointerUp(button, { ...pointer, clientX: 350, clientY: 150 });
+    expect(document.querySelector('.drag-ghost')).toBeNull();
+    expect(onPlace).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

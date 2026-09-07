@@ -3,6 +3,7 @@ import { canSnap, type Difficulty, type Piece } from './engine';
 import { sound } from '../audio/sound';
 import { PieceArtwork } from './PieceArtwork';
 import { PIECE_SCALE } from './geometry';
+import { createDragMotion } from './dragMotion';
 
 interface Drag {
   id: number;
@@ -16,7 +17,7 @@ interface Drag {
   startX: number;
   startY: number;
   moved: boolean;
-  frame: number;
+  motion: ReturnType<typeof createDragMotion>;
 }
 export function DraggablePiece({
   piece,
@@ -39,7 +40,7 @@ export function DraggablePiece({
 }) {
   const active = useRef<Drag | null>(null);
   const suppressClick = useRef(false);
-  const returnTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const returningMotion = useRef<ReturnType<typeof createDragMotion> | null>(null);
   const returningGhost = useRef<HTMLDivElement | null>(null);
   const returningSource = useRef<HTMLButtonElement | null>(null);
 
@@ -47,16 +48,17 @@ export function DraggablePiece({
     const drag = active.current;
     if (drag) {
       active.current = null;
-      cancelAnimationFrame(drag.frame);
+      drag.motion.dispose();
       drag.source.classList.remove('drag-source');
       if (drag.source.hasPointerCapture(drag.id)) drag.source.releasePointerCapture(drag.id);
       drag.ghost.remove();
     }
-    if (returnTimer.current) clearTimeout(returnTimer.current);
+    returningMotion.current?.dispose();
     returningGhost.current?.remove();
     returningSource.current?.classList.remove('drag-source');
     returningGhost.current = null;
     returningSource.current = null;
+    returningMotion.current = null;
   }
   useEffect(() => {
     const cancel = () => cleanup();
@@ -110,7 +112,13 @@ export function DraggablePiece({
       startX: event.clientX,
       startY: event.clientY,
       moved: false,
-      frame: 0,
+      motion: createDragMotion(ghost, {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        scale: rect.width / pieceSize,
+        size: pieceSize,
+        reducedMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
+      }),
     };
     active.current = drag;
     position(drag);
@@ -119,7 +127,7 @@ export function DraggablePiece({
     source.setPointerCapture(event.pointerId);
   }
   function position(drag: Drag) {
-    drag.ghost.style.transform = `translate3d(${drag.x + drag.offsetX - drag.size / 2}px,${drag.y + drag.offsetY - drag.size / 2}px,0) scale(1.06)`;
+    drag.motion.moveTo(drag.x + drag.offsetX, drag.y + drag.offsetY);
   }
   function move(event: ReactPointerEvent<HTMLButtonElement>) {
     const drag = active.current;
@@ -127,11 +135,7 @@ export function DraggablePiece({
     drag.x = event.clientX;
     drag.y = event.clientY;
     drag.moved ||= Math.hypot(drag.x - drag.startX, drag.y - drag.startY) > 5;
-    if (!drag.frame)
-      drag.frame = requestAnimationFrame(() => {
-        drag.frame = 0;
-        position(drag);
-      });
+    position(drag);
   }
   function end(event: ReactPointerEvent<HTMLButtonElement>) {
     const drag = active.current;
@@ -160,22 +164,18 @@ export function DraggablePiece({
       cleanup();
       return;
     }
-    cancelAnimationFrame(drag.frame);
-    position(drag);
     active.current = null;
     if (drag.source.hasPointerCapture(drag.id)) drag.source.releasePointerCapture(drag.id);
     const rect = drag.source.getBoundingClientRect();
-    drag.ghost.style.transition = 'transform 180ms ease, opacity 180ms ease';
-    drag.ghost.style.transformOrigin = 'top left';
-    drag.ghost.style.transform = `translate3d(${rect.left}px,${rect.top}px,0) scale(${rect.width / drag.size})`;
     returningGhost.current = drag.ghost;
     returningSource.current = drag.source;
-    returnTimer.current = setTimeout(() => {
-      drag.ghost.remove();
-      drag.source.classList.remove('drag-source');
-      returningGhost.current = null;
-      returningSource.current = null;
-    }, 180);
+    returningMotion.current = drag.motion;
+    drag.motion.returnTo(
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2,
+      rect.width / drag.size,
+      () => cleanup(),
+    );
   }
   return (
     <button

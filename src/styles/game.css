@@ -235,9 +235,11 @@
   z-index: 200;
   pointer-events: none;
   will-change: transform;
+  transform-origin: center;
+  backface-visibility: hidden;
 }
 .drag-ghost .piece-art {
-  filter: drop-shadow(0 9px 7px #32365245);
+  filter: drop-shadow(0 12px 9px #32365245);
 }
 .tray-pagination {
   display: flex;
