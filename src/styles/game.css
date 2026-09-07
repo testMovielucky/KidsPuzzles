@@ -499,6 +499,13 @@
   }
 }
 @media (orientation: landscape) and (max-height: 600px) {
+  .app-shell.game-active {
+    --game-top: max(4px, env(safe-area-inset-top));
+    --game-bottom: max(4px, env(safe-area-inset-bottom));
+    --landscape-height: calc(100svh - var(--game-top) - var(--game-bottom));
+    padding: var(--game-top) max(8px, env(safe-area-inset-right)) var(--game-bottom)
+      max(8px, env(safe-area-inset-left));
+  }
   .game-sound-button {
     display: inline-flex;
   }
@@ -506,11 +513,16 @@
     display: none;
   }
   .game-page {
-    padding-top: max(8px, env(safe-area-inset-top));
+    display: grid;
+    grid-template-rows: 44px minmax(0, 1fr);
+    gap: 4px;
+    width: 100%;
+    height: var(--landscape-height);
+    padding: 0;
   }
   .game-toolbar {
-    margin-bottom: 12px;
-    gap: 14px;
+    margin: 0;
+    gap: 8px;
   }
   .game-title h1 {
     font-size: 20px;
@@ -524,42 +536,58 @@
     padding: 10px 15px;
   }
   .game-layout {
-    grid-template-columns: minmax(210px, 1fr) minmax(0, 1fr);
-    gap: 24px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 8px;
     align-items: center;
+    min-height: 0;
   }
   .board-section {
-    width: min(100%, calc(100dvh - 114px));
-    min-width: 210px;
+    width: min(100%, calc(var(--landscape-height) - 70px));
+    min-width: 0;
   }
   .board-frame {
-    padding: 7px;
+    padding: 5px;
     border-radius: 17px;
   }
   .game-progress {
-    margin-top: 6px;
-    font-size: 11px;
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 18px;
   }
   .tray-section {
-    width: min(100%, 320px);
+    /* Reserve 48px for the toolbar and 48px for the tray heading and row gap. */
+    width: min(100%, calc((var(--landscape-height) - 96px) * 1.5 + 4px));
   }
   .tray-heading h2 {
     font-size: 18px;
   }
   .tray-heading {
-    margin-bottom: 10px;
+    min-height: 44px;
+    margin: 0 0 2px;
+    padding-right: 148px;
+  }
+  .tray-heading > span {
+    display: none;
   }
   .tray-hint,
   .tap-hint {
     display: none;
   }
   .pieces-tray {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     min-height: 0;
-    gap: 10px;
+    gap: 2px;
   }
   .tray-pagination {
-    margin-top: 12px;
-    gap: 20px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0;
+    gap: 8px;
+  }
+  .tray-pagination > span {
+    min-width: 36px;
+    text-align: center;
   }
   .tray-pagination .icon-button {
     width: 44px;
