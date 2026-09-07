@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Puzzle } from '../data/puzzles';
 import { Icon } from '../components/Icon';
@@ -16,6 +16,14 @@ import {
 import { DraggablePiece } from './DraggablePiece';
 import { PieceArtwork } from './PieceArtwork';
 import { useTraySize } from './useTraySize';
+import { PuzzleIntro, type IntroPhase } from './PuzzleIntro';
+
+const introMessages = {
+  preview: 'Посмотри на картинку.',
+  cut: 'Картинка разделяется на кусочки.',
+  scatter: 'Кусочки отправляются в панель.',
+  ready: '',
+};
 
 export function GameBoard({
   puzzle,
@@ -38,8 +46,15 @@ export function GameBoard({
   const [celebration, setCelebration] = useState(false);
   const [imageStatus, setImageStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [announcement, setAnnouncement] = useState('');
+  const [introPhase, setIntroPhase] = useState<IntroPhase>('preview');
   const boardRef = useRef<HTMLDivElement>(null);
+  const trayRef = useRef<HTMLDivElement>(null);
   const placedRef = useRef<number[]>([]);
+  const isIntro = introPhase !== 'ready';
+  const finishIntro = useCallback(() => {
+    setIntroPhase('ready');
+    setAnnouncement('Можно собирать! Переноси кусочки на картинку.');
+  }, []);
   const remaining = order.filter((piece) => !placed.includes(piece.index));
   const pageCount = Math.max(1, Math.ceil(remaining.length / traySize));
   const currentPage = Math.min(Math.floor(pageStart / traySize), pageCount - 1);
@@ -71,7 +86,7 @@ export function GameBoard({
   }, [complete]);
 
   function place(index: number) {
-    if (placedRef.current.includes(index)) return;
+    if (isIntro || placedRef.current.includes(index)) return;
     const next = placePiece(placedRef.current, index, size);
     placedRef.current = next;
     setPlaced(next);
@@ -97,6 +112,7 @@ export function GameBoard({
     setSelected(null);
     setOrder(shuffle(pieces));
     setPageStart(0);
+    setIntroPhase('preview');
     setAnnouncement('Соберём ещё раз!');
   }
   if (imageStatus === 'error')
@@ -141,6 +157,7 @@ export function GameBoard({
           className="button preview-button"
           onClick={() => setOriginal(true)}
           aria-label="Посмотреть картинку"
+          disabled={isIntro}
         >
           <Icon name="eye" />
           <span>Подсказка</span>
@@ -151,7 +168,7 @@ export function GameBoard({
           Открываем картинку…
         </p>
       ) : (
-        <div className={`game-layout ${complete ? 'is-complete' : ''}`}>
+        <div className={`game-layout ${complete ? 'is-complete' : ''}`} aria-busy={isIntro}>
           <div className="board-section">
             <div className="board-space">
               <div className="board-frame">
@@ -180,6 +197,7 @@ export function GameBoard({
                       <button
                         key={piece.index}
                         className="board-cell empty-cell"
+                        disabled={isIntro}
                         onClick={() => tryCell(piece.index)}
                         aria-label={`Место: ряд ${piece.row + 1}, столбец ${piece.column + 1}`}
                       >
@@ -237,20 +255,29 @@ export function GameBoard({
                   <span>{remaining.length}</span>
                 </div>
                 <p className="tray-hint">Перетаскивай на картинку</p>
-                <div className="pieces-tray">
-                  {visible.map((piece) => (
-                    <DraggablePiece
-                      key={piece.index}
-                      piece={piece}
-                      size={size}
-                      imageUrl={puzzle.imageUrl}
-                      boardRef={boardRef}
-                      selected={selected === piece.index}
-                      onSelect={() => setSelected(selected === piece.index ? null : piece.index)}
-                      onPlace={place}
-                      snapThreshold={snapThreshold}
-                    />
-                  ))}
+                <div className="pieces-tray" ref={trayRef}>
+                  {visible.map((piece) =>
+                    isIntro ? (
+                      <span
+                        key={piece.index}
+                        className="tray-piece intro-slot"
+                        data-intro-target
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <DraggablePiece
+                        key={piece.index}
+                        piece={piece}
+                        size={size}
+                        imageUrl={puzzle.imageUrl}
+                        boardRef={boardRef}
+                        selected={selected === piece.index}
+                        onSelect={() => setSelected(selected === piece.index ? null : piece.index)}
+                        onPlace={place}
+                        snapThreshold={snapThreshold}
+                      />
+                    ),
+                  )}
                   {Array.from({ length: traySize - visible.length }, (_, index) => (
                     <span key={`space-${index}`} className="tray-space" aria-hidden="true" />
                   ))}
@@ -260,7 +287,7 @@ export function GameBoard({
                     <button
                       className="icon-button"
                       aria-label="Предыдущие кусочки"
-                      disabled={currentPage === 0}
+                      disabled={isIntro || currentPage === 0}
                       onClick={() => {
                         setPageStart((currentPage - 1) * traySize);
                         setSelected(null);
@@ -274,7 +301,7 @@ export function GameBoard({
                     <button
                       className="icon-button"
                       aria-label="Следующие кусочки"
-                      disabled={currentPage === pageCount - 1}
+                      disabled={isIntro || currentPage === pageCount - 1}
                       onClick={() => {
                         setPageStart((currentPage + 1) * traySize);
                         setSelected(null);
@@ -288,10 +315,21 @@ export function GameBoard({
               </>
             )}
           </section>
+          {isIntro && (
+            <PuzzleIntro
+              order={order}
+              size={size}
+              imageUrl={puzzle.imageUrl}
+              boardRef={boardRef}
+              trayRef={trayRef}
+              onPhase={setIntroPhase}
+              onComplete={finishIntro}
+            />
+          )}
         </div>
       )}
       <p className="sr-only" role="status" aria-live="polite">
-        {announcement}
+        {isIntro && imageStatus === 'ready' ? introMessages[introPhase] : announcement}
       </p>
       <Modal
         open={audioSettings}

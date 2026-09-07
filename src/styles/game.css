@@ -82,6 +82,33 @@
   height: 100%;
   z-index: -1;
 }
+.puzzle-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  overflow: hidden;
+  visibility: hidden;
+}
+.intro-original,
+.intro-piece {
+  position: absolute;
+}
+.intro-original {
+  object-fit: cover;
+  border-radius: 12px;
+  z-index: 100;
+}
+.intro-piece {
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+.puzzle-intro[data-phase='scatter'] .piece-art {
+  filter: drop-shadow(0 4px 3px #32365230);
+}
+.intro-slot {
+  visibility: hidden;
+}
 .board-cell {
   position: relative;
   min-width: 0;
