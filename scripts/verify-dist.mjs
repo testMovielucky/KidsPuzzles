@@ -14,6 +14,9 @@ for (const icon of manifest.icons) {
   assert.ok(sw.includes(icon.src), `Missing precached icon: ${icon.src}`);
 }
 const pictures = await readdir('dist/assets/puzzles');
+const music = 'audio/little-discoveries.wav';
+assert.ok((await stat(`dist/${music}`)).size > 0);
+assert.ok(sw.includes(music), 'Background music must be available offline');
 for (const picture of pictures) {
   assert.ok(sw.includes(`assets/puzzles/${picture}`), `Missing offline picture: ${picture}`);
 }
@@ -23,5 +26,5 @@ for (const file of await readdir('dist/assets')) {
   }
 }
 console.log(
-  `Verified ${pictures.length} offline puzzles, app assets, fonts and PWA icons at base ${base}`,
+  `Verified ${pictures.length} offline puzzles, music, app assets, fonts and PWA icons at base ${base}`,
 );

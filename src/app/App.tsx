@@ -4,6 +4,7 @@ import { Home } from '../pages/Home';
 import { Category } from '../pages/Category';
 import { Icon } from '../components/Icon';
 import { Modal } from '../components/Modal';
+import { AudioSettings } from '../components/AudioSettings';
 import { PuzzleGame } from '../pages/PuzzleGame';
 import { MyPuzzles } from '../pages/MyPuzzles';
 import { SettingsProvider, useSettings } from './settings';
@@ -75,20 +76,7 @@ function AppContent() {
         description="Всё для спокойной игры"
         className="settings-modal"
       >
-        <button
-          className="setting-row"
-          role="switch"
-          aria-checked={soundEnabled}
-          onClick={toggleSound}
-        >
-          <span>
-            <Icon name={soundEnabled ? 'sound' : 'muted'} />
-            Звуки игры
-          </span>
-          <span className={`switch-track ${soundEnabled ? 'is-on' : ''}`}>
-            <i />
-          </span>
-        </button>
+        <AudioSettings />
         <div className="settings-copy">
           <h3>Как играть</h3>
           <p>

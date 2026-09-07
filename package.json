@@ -14,7 +14,8 @@
     "test": "vitest run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "icons": "node scripts/create-icons.mjs"
+    "icons": "node scripts/create-icons.mjs",
+    "music": "node scripts/create-music.mjs"
   },
   "dependencies": {
     "@fontsource/nunito": "^5.3.0",

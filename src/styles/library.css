@@ -105,6 +105,7 @@
   gap: 12px;
 }
 .switch-track {
+  flex-shrink: 0;
   width: 45px;
   height: 28px;
   background: #c3c3cf;
@@ -131,6 +132,31 @@
 .settings-copy h3 {
   font-size: 18px;
   margin: 25px 0 8px;
+}
+.volume-setting {
+  display: block;
+  margin-top: 20px;
+  font-size: 16px;
+}
+.volume-setting > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.volume-setting output {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.volume-setting input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin: 4px 0 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.volume-setting input:disabled {
+  opacity: 0.45;
 }
 .settings-copy p {
   font-size: 15px;

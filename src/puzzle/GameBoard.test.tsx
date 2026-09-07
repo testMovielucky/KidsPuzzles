@@ -138,4 +138,16 @@ describe('responsive puzzle tray', () => {
     );
     expect(localStorage.getItem('kids-puzzles:sound')).toBe('off');
   });
+  it('adjusts music during play without resetting the puzzle', () => {
+    setup();
+    place(visiblePieces()[0]!, 3);
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить музыку и звуки' }));
+    fireEvent.change(screen.getByRole('slider', { name: 'Громкость музыки' }), {
+      target: { value: '22' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Закрыть' }));
+    expect(screen.getByLabelText('Собрано 1 из 9')).toBeDefined();
+    expect(visiblePieces()).toHaveLength(2);
+    expect(localStorage.getItem('kids-puzzles:music-volume')).toBe('0.22');
+  });
 });

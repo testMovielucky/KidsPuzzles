@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Puzzle } from '../data/puzzles';
 import { Icon } from '../components/Icon';
 import { Modal } from '../components/Modal';
+import { AudioSettings } from '../components/AudioSettings';
 import { sound } from '../audio/sound';
 import { useSettings } from '../app/settings';
 import {
@@ -33,6 +34,7 @@ export function GameBoard({
   const [selected, setSelected] = useState<number | null>(null);
   const [pageStart, setPageStart] = useState(0);
   const [original, setOriginal] = useState(false);
+  const [audioSettings, setAudioSettings] = useState(false);
   const [celebration, setCelebration] = useState(false);
   const [imageStatus, setImageStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [announcement, setAnnouncement] = useState('');
@@ -127,6 +129,13 @@ export function GameBoard({
           onClick={toggleSound}
         >
           <Icon name={soundEnabled ? 'sound' : 'muted'} />
+        </button>
+        <button
+          className="icon-button game-sound-button"
+          aria-label="Настроить музыку и звуки"
+          onClick={() => setAudioSettings(true)}
+        >
+          <Icon name="music" />
         </button>
         <button
           className="button preview-button"
@@ -284,6 +293,15 @@ export function GameBoard({
       <p className="sr-only" role="status" aria-live="polite">
         {announcement}
       </p>
+      <Modal
+        open={audioSettings}
+        onOpenChange={setAudioSettings}
+        title="Музыка и звуки"
+        description="Настрой громкость для спокойной игры"
+        className="settings-modal"
+      >
+        <AudioSettings />
+      </Modal>
       <Modal
         open={original}
         onOpenChange={setOriginal}

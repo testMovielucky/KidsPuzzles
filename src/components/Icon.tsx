@@ -5,6 +5,8 @@ const paths = {
   close: 'm6 6 12 12M6 18 18 6',
   sound: 'm11 4-6 5H2v6h3l6 5V4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14',
   muted: 'm11 4-6 5H2v6h3l6 5V4Zm5 5 6 6m0-6-6 6',
+  music:
+    'M9 18V5l11-2v13M9 9l11-2M9 18a3 2 0 1 1-3-2 3 2 0 0 1 3 2Zm11-2a3 2 0 1 1-3-2 3 2 0 0 1 3 2Z',
   settings:
     'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2',
   image:
