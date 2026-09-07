@@ -51,6 +51,19 @@ function AppContent() {
           </button>
         </div>
       </header>
+      <div className="landscape-controls">
+        <button
+          className="icon-button"
+          aria-label={soundEnabled ? 'Выключить звук' : 'Включить звук'}
+          aria-pressed={soundEnabled}
+          onClick={toggleSound}
+        >
+          <Icon name={soundEnabled ? 'sound' : 'muted'} />
+        </button>
+        <button className="icon-button" aria-label="Настройки" onClick={() => setSettings(true)}>
+          <Icon name="settings" />
+        </button>
+      </div>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/category/:categoryId" element={<Category />} />

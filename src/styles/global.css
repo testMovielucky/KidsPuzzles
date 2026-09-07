@@ -98,6 +98,9 @@ svg {
   justify-content: space-between;
   border-bottom: 1px solid var(--line);
 }
+.landscape-controls {
+  display: none;
+}
 .brand {
   display: flex;
   align-items: center;
@@ -713,6 +716,109 @@ svg {
   .difficulty-preview {
     width: 130px;
     height: 130px;
+  }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  .app-shell:not(.game-active) {
+    --browse-top: max(8px, env(safe-area-inset-top));
+    --browse-bottom: max(8px, env(safe-area-inset-bottom));
+    padding: var(--browse-top) max(12px, env(safe-area-inset-right)) var(--browse-bottom)
+      max(12px, env(safe-area-inset-left));
+  }
+  .site-header {
+    display: none;
+  }
+  .landscape-controls {
+    display: flex;
+    gap: 8px;
+    position: absolute;
+    top: var(--browse-top);
+    right: max(12px, env(safe-area-inset-right));
+    z-index: 10;
+  }
+  .game-active .landscape-controls {
+    display: none;
+  }
+  .landscape-controls .icon-button,
+  .page-heading > .icon-button {
+    width: 44px;
+    height: 44px;
+  }
+  .page {
+    padding-top: 0;
+  }
+  .page-heading {
+    min-height: 44px;
+    padding-right: 112px;
+    margin-bottom: 16px;
+  }
+  .page-heading h1 {
+    font-size: 26px;
+  }
+  .page-heading p {
+    display: none;
+  }
+  .home {
+    padding: 0;
+  }
+  .home-heading {
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 112px 8px 0;
+    text-align: left;
+  }
+  .home-heading h1 {
+    max-width: none;
+    font-size: 24px;
+    letter-spacing: -0.6px;
+    margin: 0;
+  }
+  .home-heading p {
+    display: none;
+  }
+  .category-grid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: clamp(190px, 34vw, 280px);
+    align-items: start;
+    gap: 12px;
+    width: calc(100% + 16px);
+    max-width: none;
+    margin: 0 -8px;
+    padding: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 8px;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+  .category-card {
+    padding: 8px 8px 12px;
+    border-radius: 22px;
+    scroll-snap-align: start;
+  }
+  .category-art,
+  .personal-art {
+    height: clamp(72px, calc(100svh - var(--browse-top) - var(--browse-bottom) - 136px), 230px);
+    aspect-ratio: auto;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .photo-front > svg {
+    width: clamp(40px, 14svh, 70px);
+    height: clamp(40px, 14svh, 70px);
+  }
+  .category-label {
+    min-height: 44px;
+    padding: 8px 4px 0;
+    gap: 8px;
+  }
+  .category-label h2 {
+    font-size: 22px;
+  }
+  .category-label p {
+    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {

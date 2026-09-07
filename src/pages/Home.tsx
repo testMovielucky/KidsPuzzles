@@ -11,7 +11,7 @@ export function Home() {
         </h1>
         <p>Выбирай любимую картинку</p>
       </div>
-      <div className="category-grid">
+      <nav className="category-grid" aria-label="Темы пазлов">
         {categories.map((category) => (
           <Link
             key={category.id}
@@ -54,7 +54,7 @@ export function Home() {
             </span>
           </div>
         </Link>
-      </div>
+      </nav>
     </main>
   );
 }
