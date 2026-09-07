@@ -4,6 +4,7 @@ import type { Puzzle } from '../data/puzzles';
 import { Icon } from '../components/Icon';
 import { Modal } from '../components/Modal';
 import { sound } from '../audio/sound';
+import { useSettings } from '../app/settings';
 import {
   createPieces,
   DEFAULT_SNAP_THRESHOLD,
@@ -13,6 +14,7 @@ import {
 } from './engine';
 import { DraggablePiece } from './DraggablePiece';
 import { PieceArtwork } from './PieceArtwork';
+import { useTraySize } from './useTraySize';
 
 export function GameBoard({
   puzzle,
@@ -23,11 +25,13 @@ export function GameBoard({
   size: Difficulty;
   snapThreshold?: number;
 }) {
+  const { soundEnabled, toggleSound } = useSettings();
+  const traySize = useTraySize();
   const pieces = useMemo(() => createPieces(size), [size]);
   const [order, setOrder] = useState(() => shuffle(pieces));
   const [placed, setPlaced] = useState<number[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
-  const [page, setPage] = useState(0);
+  const [pageStart, setPageStart] = useState(0);
   const [original, setOriginal] = useState(false);
   const [celebration, setCelebration] = useState(false);
   const [imageStatus, setImageStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -35,9 +39,9 @@ export function GameBoard({
   const boardRef = useRef<HTMLDivElement>(null);
   const placedRef = useRef<number[]>([]);
   const remaining = order.filter((piece) => !placed.includes(piece.index));
-  const pageCount = Math.max(1, Math.ceil(remaining.length / 6));
-  const currentPage = Math.min(page, pageCount - 1);
-  const visible = remaining.slice(currentPage * 6, currentPage * 6 + 6);
+  const pageCount = Math.max(1, Math.ceil(remaining.length / traySize));
+  const currentPage = Math.min(Math.floor(pageStart / traySize), pageCount - 1);
+  const visible = remaining.slice(currentPage * traySize, (currentPage + 1) * traySize);
   const complete = placed.length === size * size;
   const back =
     puzzle.categoryId === 'my-puzzles' ? '/my-puzzles' : `/category/${puzzle.categoryId}`;
@@ -90,7 +94,7 @@ export function GameBoard({
     placedRef.current = [];
     setSelected(null);
     setOrder(shuffle(pieces));
-    setPage(0);
+    setPageStart(0);
     setAnnouncement('Соберём ещё раз!');
   }
   if (imageStatus === 'error')
@@ -111,11 +115,19 @@ export function GameBoard({
           <Icon name="back" />
         </Link>
         <div className="game-title">
-          <h1>{puzzle.title}</h1>
+          <h1 title={puzzle.title}>{puzzle.title}</h1>
           <span>
             {size} × {size}
           </span>
         </div>
+        <button
+          className="icon-button game-sound-button"
+          aria-label={soundEnabled ? 'Выключить звук' : 'Включить звук'}
+          aria-pressed={soundEnabled}
+          onClick={toggleSound}
+        >
+          <Icon name={soundEnabled ? 'sound' : 'muted'} />
+        </button>
         <button
           className="button preview-button"
           onClick={() => setOriginal(true)}
@@ -132,47 +144,54 @@ export function GameBoard({
       ) : (
         <div className={`game-layout ${complete ? 'is-complete' : ''}`}>
           <div className="board-section">
-            <div className="board-frame">
-              <div
-                className="puzzle-board"
-                ref={boardRef}
-                style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}
-                aria-label="Поле пазла"
-              >
-                <img className="board-guide" src={puzzle.imageUrl} alt="" />
-                {pieces.map((piece) =>
-                  placed.includes(piece.index) ? (
-                    <div
-                      key={piece.index}
-                      className="board-cell placed-piece"
-                      aria-label={`Кусочек ${piece.index + 1} на месте`}
-                    >
-                      <PieceArtwork piece={piece} size={size} imageUrl={puzzle.imageUrl} onBoard />
-                    </div>
-                  ) : (
-                    <button
-                      key={piece.index}
-                      className="board-cell empty-cell"
-                      onClick={() => tryCell(piece.index)}
-                      aria-label={`Место: ряд ${piece.row + 1}, столбец ${piece.column + 1}`}
-                    >
-                      <PieceArtwork
-                        piece={piece}
-                        size={size}
-                        imageUrl={puzzle.imageUrl}
-                        slot
-                        onBoard
-                      />
-                    </button>
-                  ),
-                )}
-                {complete && (
-                  <img
-                    className="completed-image"
-                    src={puzzle.imageUrl}
-                    alt={`Собранный пазл: ${puzzle.title}`}
-                  />
-                )}
+            <div className="board-space">
+              <div className="board-frame">
+                <div
+                  className="puzzle-board"
+                  ref={boardRef}
+                  style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}
+                  aria-label="Поле пазла"
+                >
+                  <img className="board-guide" src={puzzle.imageUrl} alt="" />
+                  {pieces.map((piece) =>
+                    placed.includes(piece.index) ? (
+                      <div
+                        key={piece.index}
+                        className="board-cell placed-piece"
+                        aria-label={`Кусочек ${piece.index + 1} на месте`}
+                      >
+                        <PieceArtwork
+                          piece={piece}
+                          size={size}
+                          imageUrl={puzzle.imageUrl}
+                          onBoard
+                        />
+                      </div>
+                    ) : (
+                      <button
+                        key={piece.index}
+                        className="board-cell empty-cell"
+                        onClick={() => tryCell(piece.index)}
+                        aria-label={`Место: ряд ${piece.row + 1}, столбец ${piece.column + 1}`}
+                      >
+                        <PieceArtwork
+                          piece={piece}
+                          size={size}
+                          imageUrl={puzzle.imageUrl}
+                          slot
+                          onBoard
+                        />
+                      </button>
+                    ),
+                  )}
+                  {complete && (
+                    <img
+                      className="completed-image"
+                      src={puzzle.imageUrl}
+                      alt={`Собранный пазл: ${puzzle.title}`}
+                    />
+                  )}
+                </div>
               </div>
             </div>
             <div
@@ -223,6 +242,9 @@ export function GameBoard({
                       snapThreshold={snapThreshold}
                     />
                   ))}
+                  {Array.from({ length: traySize - visible.length }, (_, index) => (
+                    <span key={`space-${index}`} className="tray-space" aria-hidden="true" />
+                  ))}
                 </div>
                 {pageCount > 1 && (
                   <div className="tray-pagination">
@@ -231,13 +253,13 @@ export function GameBoard({
                       aria-label="Предыдущие кусочки"
                       disabled={currentPage === 0}
                       onClick={() => {
-                        setPage(currentPage - 1);
+                        setPageStart((currentPage - 1) * traySize);
                         setSelected(null);
                       }}
                     >
                       <Icon name="back" />
                     </button>
-                    <span>
+                    <span aria-live="polite" aria-atomic="true">
                       {currentPage + 1} / {pageCount}
                     </span>
                     <button
@@ -245,7 +267,7 @@ export function GameBoard({
                       aria-label="Следующие кусочки"
                       disabled={currentPage === pageCount - 1}
                       onClick={() => {
-                        setPage(currentPage + 1);
+                        setPageStart((currentPage + 1) * traySize);
                         setSelected(null);
                       }}
                     >

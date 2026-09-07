@@ -17,10 +17,17 @@
   align-items: center;
   gap: 16px;
   flex: 1;
+  min-width: 0;
 }
 .game-title h1 {
   font-size: 28px;
   letter-spacing: -0.8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.game-sound-button {
+  display: none;
 }
 .game-title > span {
   font-size: 14px;
@@ -205,6 +212,9 @@
   transition: opacity 0.15s;
   cursor: grab;
 }
+.tray-space {
+  aspect-ratio: 1;
+}
 .tray-piece .piece-art {
   filter: drop-shadow(0 3px 2px #32365230);
   transition: filter 0.15s;
@@ -343,34 +353,45 @@
   }
 }
 @media (max-width: 700px) and (orientation: portrait) {
+  .app-shell.game-active {
+    --game-top: max(8px, env(safe-area-inset-top));
+    --game-bottom: max(8px, env(safe-area-inset-bottom));
+    padding: var(--game-top) max(12px, env(safe-area-inset-right)) var(--game-bottom)
+      max(12px, env(safe-area-inset-left));
+  }
   .game-page {
-    padding-top: 18px;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 8px;
+    width: 100%;
+    height: calc(100svh - var(--game-top) - var(--game-bottom));
+    padding: 0;
   }
   .game-active .site-header {
-    height: 74px;
-  }
-  .game-active .brand {
-    font-size: 27px;
-  }
-  .game-active .brand-mark {
-    width: 39px;
-    height: 39px;
-  }
-  .game-active .header-actions .icon-button {
-    width: 43px;
-    height: 43px;
+    display: none;
   }
   .game-toolbar {
-    gap: 12px;
-    margin-bottom: 20px;
+    gap: 8px;
+    min-height: 48px;
+    margin: 0;
+  }
+  .game-toolbar .icon-button,
+  .preview-button {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex-shrink: 0;
+  }
+  .game-sound-button {
+    display: inline-flex;
   }
   .game-title {
     display: block;
   }
   .game-title h1 {
-    font-size: 21px;
+    font-size: 18px;
     letter-spacing: -0.5px;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
   }
   .game-title > span {
     font-size: 12px;
@@ -378,8 +399,7 @@
     background: none;
   }
   .preview-button {
-    padding: 12px;
-    min-width: 48px;
+    padding: 10px;
     border-radius: 50%;
   }
   .preview-button > span {
@@ -387,27 +407,49 @@
   }
   .game-layout {
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
+    grid-template-rows: minmax(224px, 1fr) auto;
+    align-items: stretch;
+    gap: 8px;
+    min-height: 0;
   }
   .board-section {
-    width: min(100%, 38dvh, 460px);
+    width: min(100%, 440px);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    gap: 6px;
+  }
+  .board-space {
+    flex: 1;
+    min-height: 200px;
+    container-type: size;
+    display: grid;
+    place-items: center;
   }
   .board-frame {
-    padding: 9px;
+    width: min(100cqw, 100cqh);
+    aspect-ratio: 1;
+    padding: 8px;
     border-radius: 21px;
   }
   .game-progress {
-    margin-top: 12px;
+    margin: 0 auto;
     width: 64%;
     gap: 10px;
     font-size: 12px;
+    line-height: 18px;
+    flex-shrink: 0;
   }
   .tray-section {
-    width: min(100%, 380px);
+    width: min(100%, 400px);
+    padding: 8px;
+    border-radius: 22px;
+    background: #eeece780;
+    align-self: end;
   }
   .tray-heading {
-    min-height: 48px;
-    margin-bottom: 8px;
+    min-height: 44px;
+    margin: 0 4px 4px;
   }
   .tray-heading > span {
     display: none;
@@ -421,23 +463,31 @@
   .pieces-tray {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-    min-height: 184px;
+    min-height: 0;
   }
   .tray-piece {
     min-height: 48px;
   }
   .tray-pagination {
     position: absolute;
-    top: 0;
-    right: 0;
+    top: 8px;
+    right: 8px;
     margin-top: 0;
-    gap: 12px;
+    gap: 10px;
+  }
+  .tray-pagination .icon-button {
+    width: 44px;
+    height: 44px;
+  }
+  .tray-pagination > span {
+    min-width: 38px;
+    text-align: center;
   }
   .tap-hint {
     display: none;
   }
   .complete-aside {
-    gap: 12px;
+    gap: 8px;
   }
   .complete-aside .success-badge {
     display: none;
@@ -450,27 +500,13 @@
     width: 100%;
   }
   .game-layout.is-complete {
-    gap: 20px;
-  }
-}
-@media (max-width: 390px) and (orientation: portrait) {
-  .tray-section {
-    width: 100%;
-  }
-  .pieces-tray {
-    min-height: 164px;
-  }
-  .board-section {
-    width: min(100%, 34dvh);
-  }
-  .tray-heading {
-    margin-bottom: 10px;
-  }
-  .game-layout {
-    gap: 16px;
+    gap: 8px;
   }
 }
 @media (orientation: landscape) and (max-height: 600px) {
+  .game-sound-button {
+    display: inline-flex;
+  }
   .game-active .site-header {
     display: none;
   }
