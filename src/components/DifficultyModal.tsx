@@ -18,9 +18,10 @@ export function DifficultyModal({
       }}
       title="Сколько кусочков?"
       description="Выбирай, как будем собирать"
+      className="difficulty-modal"
     >
       {puzzle && (
-        <>
+        <div className="difficulty-content">
           <img className="difficulty-preview" src={puzzle.imageUrl} alt={puzzle.title} />
           <div className="difficulty-options">
             {([3, 4, 5] as const).map((size) => (
@@ -46,7 +47,7 @@ export function DifficultyModal({
               </button>
             ))}
           </div>
-        </>
+        </div>
       )}
     </Modal>
   );
