@@ -408,14 +408,6 @@ svg {
   width: 44px;
   height: 44px;
 }
-.difficulty-preview {
-  width: 142px;
-  height: 142px;
-  object-fit: cover;
-  margin: 0 auto 24px;
-  border-radius: 22px;
-  transform: rotate(-3deg);
-}
 .difficulty-options {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -713,14 +705,9 @@ svg {
   .difficulty-option strong {
     font-size: 22px;
   }
-  .difficulty-preview {
-    width: 130px;
-    height: 130px;
-  }
 }
 @media (orientation: landscape) and (max-height: 600px) {
   .difficulty-modal {
-    --difficulty-preview-size: min(142px, 32svh);
     width: min(
       700px,
       calc(100vw - max(12px, env(safe-area-inset-left)) - max(12px, env(safe-area-inset-right)))
@@ -744,20 +731,6 @@ svg {
   .difficulty-modal .modal-close {
     top: 8px;
     right: 8px;
-  }
-  .difficulty-content {
-    display: grid;
-    grid-template-columns: var(--difficulty-preview-size) minmax(0, 1fr);
-    align-items: center;
-    gap: 16px;
-  }
-  .difficulty-modal .difficulty-preview {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1;
-    margin: 0;
-    transform: none;
-    border-radius: 16px;
   }
   .difficulty-modal .difficulty-options {
     gap: 8px;
@@ -883,11 +856,6 @@ svg {
 }
 @media (orientation: landscape) and (max-height: 300px) {
   .difficulty-modal {
-    --difficulty-preview-size: clamp(
-      64px,
-      calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 100px),
-      104px
-    );
     padding-block: 12px;
   }
   .difficulty-modal .difficulty-option {
