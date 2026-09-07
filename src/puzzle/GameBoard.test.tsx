@@ -69,13 +69,13 @@ function place(button: HTMLElement, size: number) {
 
 describe('responsive puzzle tray', () => {
   it.each([3, 4, 5] as const)(
-    'makes every piece reachable with three pieces per page at difficulty %s',
+    'makes every piece reachable with two pieces per page at difficulty %s',
     (size) => {
       setup(size);
       const seen = new Set<string>();
       while (true) {
         const pieces = visiblePieces();
-        expect(pieces.length).toBeLessThanOrEqual(3);
+        expect(pieces.length).toBeLessThanOrEqual(2);
         pieces.forEach((piece) => seen.add(piece.getAttribute('aria-label')!));
         const next = screen.getByRole('button', { name: 'Следующие кусочки' });
         if ((next as HTMLButtonElement).disabled) break;
@@ -108,14 +108,14 @@ describe('responsive puzzle tray', () => {
   });
 
   it('returns to an existing page after placing the final piece on the last page', () => {
-    setup(4);
-    for (let page = 0; page < 5; page++) {
+    setup(5);
+    for (let page = 0; page < 12; page++) {
       fireEvent.click(screen.getByRole('button', { name: 'Следующие кусочки' }));
     }
     expect(visiblePieces()).toHaveLength(1);
-    place(visiblePieces()[0]!, 4);
-    expect(visiblePieces()).toHaveLength(3);
-    expect(screen.getByLabelText('Собрано 1 из 16')).toBeDefined();
+    place(visiblePieces()[0]!, 5);
+    expect(visiblePieces()).toHaveLength(2);
+    expect(screen.getByLabelText('Собрано 1 из 25')).toBeDefined();
     expect(
       (screen.getByRole('button', { name: 'Следующие кусочки' }) as HTMLButtonElement).disabled,
     ).toBe(true);
@@ -126,7 +126,7 @@ describe('responsive puzzle tray', () => {
     for (let piece = 0; piece < 9; piece++) place(visiblePieces()[0]!, 3);
     expect(screen.getByAltText('Собранный пазл: Пазл')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Ещё раз' }));
-    expect(visiblePieces()).toHaveLength(3);
+    expect(visiblePieces()).toHaveLength(2);
     expect(screen.getByLabelText('Собрано 0 из 9')).toBeDefined();
   });
 

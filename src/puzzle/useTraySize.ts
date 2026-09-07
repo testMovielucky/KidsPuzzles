@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-const compactTray = '(max-width: 700px) and (orientation: portrait) and (max-height: 760px)';
+const compactTray = '(max-width: 700px) and (orientation: portrait)';
 
 function subscribe(onChange: () => void) {
   const query = window.matchMedia(compactTray);
@@ -14,5 +14,5 @@ export function useTraySize() {
     () => window.matchMedia(compactTray).matches,
     () => false,
   );
-  return compact ? 3 : 6;
+  return compact ? 2 : 6;
 }

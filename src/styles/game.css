@@ -104,12 +104,8 @@
   stroke-linejoin: round;
 }
 .piece-slot .piece-outline {
-  fill: #fffcf530;
-  stroke: #79788d66;
-  stroke-width: 1px;
-}
-.empty-cell:hover .piece-outline {
-  fill: #b7b1d430;
+  fill: none;
+  stroke: none;
 }
 .empty-cell:focus-visible {
   outline: none;
@@ -124,8 +120,7 @@
   z-index: 1;
 }
 .placed-piece .piece-outline {
-  stroke: #fffdf487;
-  stroke-width: 0.7px;
+  stroke: none;
 }
 .completed-image {
   position: absolute;
@@ -407,7 +402,7 @@
   }
   .game-layout {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(224px, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
     align-items: stretch;
     gap: 8px;
     min-height: 0;
@@ -421,7 +416,7 @@
   }
   .board-space {
     flex: 1;
-    min-height: 200px;
+    min-height: 0;
     container-type: size;
     display: grid;
     place-items: center;
@@ -441,14 +436,14 @@
     flex-shrink: 0;
   }
   .tray-section {
-    width: min(100%, 400px);
+    width: min(100%, 440px);
     padding: 8px;
     border-radius: 22px;
     background: #eeece780;
     align-self: end;
   }
   .tray-heading {
-    min-height: 44px;
+    min-height: 48px;
     margin: 0 4px 4px;
   }
   .tray-heading > span {
@@ -461,8 +456,8 @@
     display: none;
   }
   .pieces-tray {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
     min-height: 0;
   }
   .tray-piece {
@@ -476,8 +471,8 @@
     gap: 10px;
   }
   .tray-pagination .icon-button {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
   }
   .tray-pagination > span {
     min-width: 38px;
