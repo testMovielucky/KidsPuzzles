@@ -138,7 +138,12 @@ describe('responsive puzzle tray', () => {
     setup();
     for (let piece = 0; piece < 9; piece++) place(visiblePieces()[0]!, 3);
     expect(screen.getByAltText('Собранный пазл: Пазл')).toBeDefined();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('group', { name: 'Праздничные шарики' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Другой пазл' })).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Ещё раз' }));
+    expect(screen.queryByRole('group', { name: 'Праздничные шарики' })).toBeNull();
     act(() => vi.advanceTimersByTime(160));
     act(() => vi.advanceTimersByTime(650));
     expect(visiblePieces()).toHaveLength(2);

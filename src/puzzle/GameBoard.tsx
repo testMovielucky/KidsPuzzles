@@ -17,6 +17,7 @@ import { DraggablePiece } from './DraggablePiece';
 import { PieceArtwork } from './PieceArtwork';
 import { useTraySize } from './useTraySize';
 import { PuzzleIntro, type IntroPhase } from './PuzzleIntro';
+import { CelebrationBalloons } from './CelebrationBalloons';
 
 const introMessages = {
   preview: 'Посмотри на картинку.',
@@ -43,7 +44,6 @@ export function GameBoard({
   const [pageStart, setPageStart] = useState(0);
   const [original, setOriginal] = useState(false);
   const [audioSettings, setAudioSettings] = useState(false);
-  const [celebration, setCelebration] = useState(false);
   const [imageStatus, setImageStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [announcement, setAnnouncement] = useState('');
   const [introPhase, setIntroPhase] = useState<IntroPhase>('preview');
@@ -79,11 +79,6 @@ export function GameBoard({
       img.onerror = null;
     };
   }, [puzzle.imageUrl]);
-  useEffect(() => {
-    if (!complete) return;
-    const timer = setTimeout(() => setCelebration(true), 650);
-    return () => clearTimeout(timer);
-  }, [complete]);
 
   function place(index: number) {
     if (isIntro || placedRef.current.includes(index)) return;
@@ -106,7 +101,6 @@ export function GameBoard({
     }
   }
   function restart() {
-    setCelebration(false);
     setPlaced([]);
     placedRef.current = [];
     setSelected(null);
@@ -357,38 +351,7 @@ export function GameBoard({
           Продолжить собирать
         </button>
       </Modal>
-      <Modal
-        open={celebration}
-        onOpenChange={setCelebration}
-        title="Вот это да!"
-        description="Все кусочки нашли своё место"
-        className="celebration-modal"
-      >
-        <div className="confetti" aria-hidden="true">
-          {Array.from({ length: 16 }, (_, index) => (
-            <i
-              key={index}
-              style={{
-                left: `${(index * 31) % 100}%`,
-                background: ['#9bbdac', '#d9b4d0', '#e5c680', '#a6b8dd'][index % 4],
-                animationDelay: `${index * 0.06}s`,
-                transform: `rotate(${index * 37}deg)`,
-              }}
-            />
-          ))}
-        </div>
-        <img src={puzzle.imageUrl} alt="Собранная картинка" />
-        <div className="completion-actions">
-          <button className="button primary" onClick={restart}>
-            <Icon name="replay" />
-            Ещё раз
-          </button>
-          <Link className="button" to={back}>
-            Другой пазл
-            <Icon name="arrow" />
-          </Link>
-        </div>
-      </Modal>
+      {complete && <CelebrationBalloons />}
     </main>
   );
 }
