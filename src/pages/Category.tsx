@@ -25,7 +25,7 @@ export function Category() {
         </Link>
         <div>
           <h1>{category.title}</h1>
-          <p>Выбирай, кого соберём</p>
+          <p>Выбирай, что соберём</p>
         </div>
       </div>
       <div className="puzzle-grid">

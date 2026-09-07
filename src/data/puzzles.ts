@@ -12,48 +12,42 @@ export interface PuzzleCategory {
   color: string;
   puzzles: Puzzle[];
 }
-const asset = (id: string) => `${import.meta.env.BASE_URL}assets/puzzles/${id}.svg`;
+const asset = (filename: string) => `${import.meta.env.BASE_URL}assets/puzzles/${filename}`;
 function category(
   id: string,
   title: string,
   subtitle: string,
   color: string,
-  entries: [string, string][],
+  entries: [id: string, title: string, filename: string][],
 ): PuzzleCategory {
+  const puzzles = entries.map(([puzzleId, puzzleTitle, filename]) => ({
+    id: puzzleId,
+    title: puzzleTitle,
+    categoryId: id,
+    imageUrl: asset(filename),
+  }));
   return {
     id,
     title,
     subtitle,
     color,
-    coverImage: asset(entries[0]![0]),
-    puzzles: entries.map(([puzzleId, puzzleTitle]) => ({
-      id: puzzleId,
-      title: puzzleTitle,
-      categoryId: id,
-      imageUrl: asset(puzzleId),
-    })),
+    coverImage: puzzles[0]?.imageUrl ?? '',
+    puzzles,
   };
 }
 export const categories: PuzzleCategory[] = [
-  category('stories', 'Сказки', 'В гости к волшебству', 'lavender', [
-    ['castle', 'Волшебный замок'],
-    ['dragon', 'Добрый дракон'],
-    ['fox', 'Лесная сказка'],
-  ]),
-  category('animals', 'Животные', 'Знакомимся с друзьями', 'peach', [
-    ['lion', 'Львёнок'],
-    ['elephant', 'Слонёнок'],
-    ['giraffe', 'Жираф'],
-    ['cat', 'Кот'],
-    ['dog', 'Собака'],
-    ['panda', 'Панда'],
-  ]),
+  // These themes will appear once their finished illustrations are added.
+  category('stories', 'Сказки', 'В гости к волшебству', 'lavender', []),
+  category('animals', 'Животные', 'Знакомимся с друзьями', 'peach', []),
   category('cars', 'Машины', 'Навстречу приключениям', 'mint', [
-    ['car', 'Синяя машинка'],
-    ['truck', 'Грузовик'],
-    ['tractor', 'Трактор'],
-    ['firetruck', 'Пожарная машина'],
-    ['bus', 'Автобус'],
+    ['dump_truck', 'Самосвал', 'dump_truck.png'],
+    ['firetruck', 'Пожарная машина', 'firetruck.png'],
+    ['concrete_mixer', 'Бетономешалка', 'concrete_mixer.png'],
+    ['ambulance', 'Скорая помощь', 'ambulance.png'],
+    ['monster_truck', 'Монстр трак', 'monster_truck.png'],
+    ['polo', 'Наша машина', 'polo.png'],
+    ['formula', 'Гоночная машина', 'formula.png'],
+    ['police', 'Полицейская машина', 'police.png'],
   ]),
-];
+].filter((item) => item.puzzles.length > 0);
 export const builtInPuzzles = categories.flatMap((item) => item.puzzles);
