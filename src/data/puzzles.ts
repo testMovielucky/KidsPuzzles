@@ -19,6 +19,7 @@ function category(
   subtitle: string,
   color: string,
   entries: [id: string, title: string, filename: string][],
+  coverFilename?: string,
 ): PuzzleCategory {
   const puzzles = entries.map(([puzzleId, puzzleTitle, filename]) => ({
     id: puzzleId,
@@ -31,7 +32,7 @@ function category(
     title,
     subtitle,
     color,
-    coverImage: puzzles[0]?.imageUrl ?? '',
+    coverImage: coverFilename ? asset(coverFilename) : (puzzles[0]?.imageUrl ?? ''),
     puzzles,
   };
 }
@@ -39,15 +40,22 @@ export const categories: PuzzleCategory[] = [
   // These themes will appear once their finished illustrations are added.
   category('stories', 'Сказки', 'В гости к волшебству', 'lavender', []),
   category('animals', 'Животные', 'Знакомимся с друзьями', 'peach', []),
-  category('cars', 'Машины', 'Навстречу приключениям', 'mint', [
-    ['dump_truck', 'Самосвал', 'dump_truck.png'],
-    ['firetruck', 'Пожарная машина', 'firetruck.png'],
-    ['concrete_mixer', 'Бетономешалка', 'concrete_mixer.png'],
-    ['ambulance', 'Скорая помощь', 'ambulance.png'],
-    ['monster_truck', 'Монстр трак', 'monster_truck.png'],
-    ['polo', 'Наша машина', 'polo.png'],
-    ['formula', 'Гоночная машина', 'formula.png'],
-    ['police', 'Полицейская машина', 'police.png'],
-  ]),
+  category(
+    'cars',
+    'Машины',
+    'Навстречу приключениям',
+    'mint',
+    [
+      ['dump_truck', 'Самосвал', 'dump_truck.png'],
+      ['firetruck', 'Пожарная машина', 'firetruck.png'],
+      ['concrete_mixer', 'Бетономешалка', 'concrete_mixer.png'],
+      ['ambulance', 'Скорая помощь', 'ambulance.png'],
+      ['monster_truck', 'Монстр трак', 'monster_truck.png'],
+      ['polo', 'Наша машина', 'polo.png'],
+      ['formula', 'Гоночная машина', 'formula.png'],
+      ['police', 'Полицейская машина', 'police.png'],
+    ],
+    'cars_cover.png',
+  ),
 ].filter((item) => item.puzzles.length > 0);
 export const builtInPuzzles = categories.flatMap((item) => item.puzzles);
