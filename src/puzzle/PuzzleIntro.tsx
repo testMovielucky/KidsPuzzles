@@ -1,8 +1,9 @@
-import { useLayoutEffect, useRef, type RefObject } from 'react';
+import { useCallback, useLayoutEffect, useRef, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { Difficulty, Piece } from './engine';
 import { PIECE_PADDING, PIECE_SCALE, PIECE_UNIT } from './geometry';
 import { PieceArtwork } from './PieceArtwork';
+import { useIntroLayout, type IntroLayout } from './useIntroLayout';
 
 export const INTRO_PREVIEW_MS = 650;
 export const INTRO_CUT_MS = 650;
@@ -27,26 +28,45 @@ export function PuzzleIntro({
   onPhase: (phase: IntroPhase) => void;
   onComplete: () => void;
 }) {
+  const waitForLayout = useCallback(() => onPhase('preview'), [onPhase]);
+  const layout = useIntroLayout(boardRef, trayRef, waitForLayout, onComplete);
+  return layout ? (
+    <IntroAnimation
+      order={order}
+      size={size}
+      imageUrl={imageUrl}
+      layout={layout}
+      onPhase={onPhase}
+      onComplete={onComplete}
+    />
+  ) : null;
+}
+
+function IntroAnimation({
+  order,
+  size,
+  imageUrl,
+  layout,
+  onPhase,
+  onComplete,
+}: {
+  order: Piece[];
+  size: Difficulty;
+  imageUrl: string;
+  layout: IntroLayout;
+  onPhase: (phase: IntroPhase) => void;
+  onComplete: () => void;
+}) {
   const layerRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     const layer = layerRef.current;
-    const board = boardRef.current;
-    const tray = trayRef.current;
-    if (!layer || !board || !tray) return;
-    const boardRect = board.getBoundingClientRect();
-    const targets = Array.from(tray.querySelectorAll<HTMLElement>('[data-intro-target]')).map(
-      (slot) => slot.getBoundingClientRect(),
-    );
-    if (boardRect.width <= 0 || !targets.length || targets.some((slot) => slot.width <= 0)) {
-      onComplete();
-      return;
-    }
+    if (!layer) return;
+    const { board: boardRect, targets } = layout;
 
     const timers: ReturnType<typeof setTimeout>[] = [];
     const animations: Animation[] = [];
     let disposed = false;
-    let observer: ResizeObserver | undefined;
     const motion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     const original = layer.querySelector<HTMLImageElement>('.intro-original')!;
     const nodes = Array.from(layer.querySelectorAll<HTMLDivElement>('.intro-piece'));
@@ -89,10 +109,6 @@ export function PuzzleIntro({
       layer!.style.visibility = 'hidden';
       timers.forEach(clearTimeout);
       animations.forEach((animation) => animation.cancel());
-      observer?.disconnect();
-      window.removeEventListener('resize', finish);
-      window.removeEventListener('scroll', finish);
-      document.removeEventListener('visibilitychange', visibilityChanged);
       motion?.removeEventListener('change', finish);
     }
     function finish() {
@@ -100,40 +116,8 @@ export function PuzzleIntro({
       dispose();
       onComplete();
     }
-    function visibilityChanged() {
-      if (document.hidden) finish();
-    }
-
-    window.addEventListener('resize', finish);
-    window.addEventListener('scroll', finish, { passive: true });
-    document.addEventListener('visibilitychange', visibilityChanged);
     motion?.addEventListener('change', finish);
-    if (typeof ResizeObserver !== 'undefined') {
-      observer = new ResizeObserver(() => {
-        const rect = board.getBoundingClientRect();
-        const moved = Math.abs(rect.left - boardRect.left) + Math.abs(rect.top - boardRect.top);
-        const resized = Math.abs(rect.width - boardRect.width);
-        const slots = tray.querySelectorAll<HTMLElement>('[data-intro-target]');
-        const trayChanged =
-          slots.length !== targets.length ||
-          Array.from(slots).some((slot, i) => {
-            const next = slot.getBoundingClientRect();
-            const previous = targets[i]!;
-            return (
-              Math.abs(next.left - previous.left) +
-                Math.abs(next.top - previous.top) +
-                Math.abs(next.width - previous.width) >
-              1
-            );
-          });
-        if (moved + resized > 1 || trayChanged) finish();
-      });
-      observer.observe(board);
-      observer.observe(tray);
-    }
-    if (document.hidden) {
-      finish();
-    } else if (motion?.matches || typeof layer.animate !== 'function') {
+    if (motion?.matches || typeof layer.animate !== 'function') {
       // Keep the initial picture, but skip cutting and travel with reduced motion.
       later(finish, INTRO_PREVIEW_MS);
     } else {
@@ -150,13 +134,14 @@ export function PuzzleIntro({
             );
           });
           animate(original, [{ opacity: 1 }, { opacity: 0 }], { duration: 180 });
+          later(scatter, INTRO_CUT_MS);
         } catch {
           finish();
         }
       }, INTRO_PREVIEW_MS);
-      later(() => {
+      function scatter() {
         onPhase('scatter');
-        layer.dataset.phase = 'scatter';
+        layer!.dataset.phase = 'scatter';
         // Other pages go into the tray first; the first page lands last and stays visible.
         const indices = order.map((_, index) => index);
         const flightOrder = [...indices.slice(targets.length), ...indices.slice(0, targets.length)];
@@ -200,18 +185,15 @@ export function PuzzleIntro({
             );
           });
           void Promise.all(flights.map((animation) => animation.finished)).then(finish, finish);
+          // Count from the actual flight start, even after a delayed browser frame.
+          later(finish, FLIGHT_MS + (order.length - 1) * STAGGER_MS + 250);
         } catch {
           finish();
         }
-      }, INTRO_PREVIEW_MS + INTRO_CUT_MS);
-      // A failed or interrupted browser animation must never block the game.
-      later(
-        finish,
-        INTRO_PREVIEW_MS + INTRO_CUT_MS + FLIGHT_MS + (order.length - 1) * STAGGER_MS + 250,
-      );
+      }
     }
     return dispose;
-  }, [order, size, imageUrl, boardRef, trayRef, onPhase, onComplete]);
+  }, [order, size, imageUrl, layout, onPhase, onComplete]);
 
   return createPortal(
     <div ref={layerRef} className="puzzle-intro" aria-hidden="true">

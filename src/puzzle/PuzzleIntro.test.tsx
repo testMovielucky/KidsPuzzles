@@ -10,18 +10,43 @@ import type { Difficulty } from './engine';
 const nativeAnimate = Element.prototype.animate;
 let reduced = false;
 let portrait = false;
+let layoutReady = true;
+let boardTop = 80;
+let notifyLayout: () => void;
+let trayMedia: EventTarget;
 let calls: { element: Element; frames: Keyframe[]; cancel: ReturnType<typeof vi.fn> }[];
 
 beforeEach(() => {
   vi.useFakeTimers();
   reduced = false;
   portrait = false;
+  layoutReady = true;
+  boardTop = 80;
+  trayMedia = new EventTarget();
   calls = [];
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+    setTimeout(() => callback(performance.now()), 16),
+  );
+  vi.stubGlobal('cancelAnimationFrame', clearTimeout);
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      constructor(callback: ResizeObserverCallback) {
+        notifyLayout = () => callback([], this as unknown as ResizeObserver);
+      }
+      observe() {}
+      disconnect() {}
+    },
+  );
   localStorage.clear();
   vi.stubGlobal('matchMedia', (query: string) => ({
     matches: query.includes('reduced-motion') ? reduced : portrait,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
+    addEventListener: query.includes('reduced-motion')
+      ? vi.fn()
+      : trayMedia.addEventListener.bind(trayMedia),
+    removeEventListener: query.includes('reduced-motion')
+      ? vi.fn()
+      : trayMedia.removeEventListener.bind(trayMedia),
   }));
   vi.stubGlobal(
     'Image',
@@ -35,7 +60,8 @@ beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
     this: HTMLElement,
   ) {
-    if (this.classList.contains('puzzle-board')) return new DOMRect(20, 80, 300, 300);
+    if (!layoutReady) return new DOMRect();
+    if (this.classList.contains('puzzle-board')) return new DOMRect(20, boardTop, 300, 300);
     if (this.hasAttribute('data-intro-target')) {
       const index = Array.from(this.parentElement!.children).indexOf(this);
       return portrait
@@ -72,8 +98,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function setup(size: Difficulty = 3) {
-  return render(
+async function setup(size: Difficulty = 3) {
+  const view = render(
     <MemoryRouter>
       <SettingsProvider>
         <GameBoard
@@ -83,6 +109,8 @@ function setup(size: Difficulty = 3) {
       </SettingsProvider>
     </MemoryRouter>,
   );
+  await advance(144);
+  return view;
 }
 async function advance(ms: number) {
   await act(async () => {
@@ -92,8 +120,47 @@ async function advance(ms: number) {
 const pieces = () => screen.queryAllByRole('button', { name: /^Кусочек \d+$/ });
 
 describe('puzzle introduction', () => {
+  it('does not skip the introduction for scroll or resize events with unchanged geometry', async () => {
+    await setup();
+    fireEvent.scroll(window);
+    fireEvent(window, new Event('resize'));
+    expect(document.querySelector('.puzzle-intro')).not.toBeNull();
+    expect(pieces()).toHaveLength(0);
+    await advance(3200);
+    expect(calls.filter((call) => call.element.classList.contains('intro-piece'))).toHaveLength(9);
+    expect(pieces()).toHaveLength(6);
+  });
+
+  it('waits for nonzero layout instead of skipping the introduction', async () => {
+    layoutReady = false;
+    await setup();
+    expect(document.querySelector('.game-layout')?.getAttribute('aria-busy')).toBe('true');
+    await advance(80);
+    expect(pieces()).toHaveLength(0);
+    layoutReady = true;
+    act(() => notifyLayout());
+    await advance(144);
+    await advance(3200);
+    expect(calls.filter((call) => call.element.classList.contains('intro-piece'))).toHaveLength(9);
+    expect(pieces()).toHaveLength(6);
+  });
+
+  it('restarts after a layout shift without letting canceled flights unlock the game', async () => {
+    await setup();
+    await advance(1600);
+    boardTop += 40;
+    act(() => notifyLayout());
+    await advance(160);
+    expect(document.querySelector('.puzzle-intro')).not.toBeNull();
+    expect(pieces()).toHaveLength(0);
+    expect((document.querySelector('.intro-original') as HTMLElement).style.top).toBe('120px');
+    await advance(3200);
+    expect(pieces()).toHaveLength(6);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('shows the full picture, cuts it, then flies pieces before enabling play', async () => {
-    setup();
+    await setup();
     expect(document.querySelector('.intro-original')).not.toBeNull();
     expect(screen.getByText('Посмотри на картинку.')).toBeDefined();
     expect(pieces()).toHaveLength(0);
@@ -134,7 +201,7 @@ describe('puzzle introduction', () => {
     'lands the first page precisely in the tray at difficulty %s',
     async (size) => {
       portrait = size === 4;
-      setup(size);
+      await setup(size);
       const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-intro-target]')).map(
         (node) => node.getBoundingClientRect(),
       );
@@ -168,7 +235,7 @@ describe('puzzle introduction', () => {
     async (mode) => {
       reduced = mode === 'reduced motion';
       if (!reduced) Reflect.deleteProperty(Element.prototype, 'animate');
-      setup();
+      await setup();
       expect(document.querySelector('.intro-original')).not.toBeNull();
       await advance(INTRO_PREVIEW_MS - 1);
       expect(pieces()).toHaveLength(0);
@@ -178,19 +245,43 @@ describe('puzzle introduction', () => {
     },
   );
 
-  it('cancels flight on rotation and leaves all pieces ready to play', async () => {
-    setup(5);
+  it('replays with the new tray positions after rotating the phone', async () => {
+    await setup(5);
     await advance(INTRO_PREVIEW_MS + INTRO_CUT_MS + 100);
-    fireEvent(window, new Event('resize'));
-    expect(document.querySelector('.puzzle-intro')).toBeNull();
-    expect(pieces()).toHaveLength(6);
-    expect(calls.every((call) => call.cancel.mock.calls.length > 0)).toBe(true);
+    const previousFlights = [...calls];
+    act(() => {
+      portrait = true;
+      trayMedia.dispatchEvent(new Event('change'));
+      window.dispatchEvent(new Event('resize'));
+    });
+    await advance(144);
+    expect(pieces()).toHaveLength(0);
+    expect(previousFlights.every((call) => call.cancel.mock.calls.length > 0)).toBe(true);
     await advance(3000);
+    expect(pieces()).toHaveLength(2);
     expect(vi.getTimerCount()).toBe(0);
     expect(screen.getByLabelText('Собрано 0 из 25')).toBeDefined();
   });
 
-  it('waits for the image to load before showing the full picture', () => {
+  it('waits while hidden and plays the introduction when the page becomes visible', async () => {
+    let hidden = false;
+    vi.spyOn(document, 'hidden', 'get').mockImplementation(() => hidden);
+    await setup();
+    await advance(INTRO_PREVIEW_MS + INTRO_CUT_MS);
+    hidden = true;
+    fireEvent(document, new Event('visibilitychange'));
+    await advance(5000);
+    expect(pieces()).toHaveLength(0);
+    expect(vi.getTimerCount()).toBe(0);
+    hidden = false;
+    fireEvent(document, new Event('visibilitychange'));
+    await advance(144);
+    expect(document.querySelector('.intro-original')).not.toBeNull();
+    await advance(3000);
+    expect(pieces()).toHaveLength(6);
+  });
+
+  it('waits for the image to load before showing the full picture', async () => {
     let loaded: (() => void) | null = null;
     vi.stubGlobal(
       'Image',
@@ -201,17 +292,18 @@ describe('puzzle introduction', () => {
         }
       },
     );
-    setup();
+    await setup();
     expect(screen.getByText('Открываем картинку…')).toBeDefined();
     expect(document.querySelector('.puzzle-intro')).toBeNull();
     expect(vi.getTimerCount()).toBe(0);
     act(() => loaded?.());
+    await advance(144);
     expect(document.querySelector('.intro-original')).not.toBeNull();
     expect(pieces()).toHaveLength(0);
   });
 
   it('cleans up animations and timers when leaving the game during flight', async () => {
-    const view = setup();
+    const view = await setup();
     await advance(INTRO_PREVIEW_MS + INTRO_CUT_MS);
     view.unmount();
     await advance(3000);
@@ -221,7 +313,7 @@ describe('puzzle introduction', () => {
   });
 
   it('replays the introduction when starting the same puzzle again', async () => {
-    setup();
+    await setup();
     await advance(3000);
     for (let count = 0; count < 9; count++) {
       const piece = pieces()[0]!;
@@ -234,6 +326,7 @@ describe('puzzle introduction', () => {
       );
     }
     fireEvent.click(screen.getByRole('button', { name: 'Ещё раз' }));
+    await advance(144);
     expect(document.querySelector('.intro-original')).not.toBeNull();
     expect(pieces()).toHaveLength(0);
     await advance(3000);
@@ -245,7 +338,7 @@ describe('puzzle introduction', () => {
     Element.prototype.animate = vi.fn(() => {
       throw new Error('Animation unavailable');
     });
-    setup();
+    await setup();
     await advance(INTRO_PREVIEW_MS);
     expect(document.querySelector('.puzzle-intro')).toBeNull();
     expect(pieces()).toHaveLength(6);

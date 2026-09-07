@@ -178,7 +178,12 @@ export function GameBoard({
                   style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}
                   aria-label="Поле пазла"
                 >
-                  <img className="board-guide" src={puzzle.imageUrl} alt="" />
+                  <img
+                    className="board-guide"
+                    src={puzzle.imageUrl}
+                    alt=""
+                    style={isIntro && introPhase === 'preview' ? { opacity: 1 } : undefined}
+                  />
                   {pieces.map((piece) =>
                     placed.includes(piece.index) ? (
                       <div

@@ -10,6 +10,14 @@ let compact = true;
 let media: EventTarget;
 
 beforeEach(() => {
+  vi.useFakeTimers();
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+    setTimeout(() => callback(performance.now()), 16),
+  );
+  vi.stubGlobal('cancelAnimationFrame', clearTimeout);
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+    new DOMRect(0, 0, 300, 300),
+  );
   compact = true;
   media = new EventTarget();
   vi.stubGlobal('matchMedia', () => ({
@@ -31,11 +39,13 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 function setup(size: Difficulty = 3) {
-  return render(
+  const view = render(
     <MemoryRouter>
       <SettingsProvider>
         <GameBoard
@@ -50,6 +60,9 @@ function setup(size: Difficulty = 3) {
       </SettingsProvider>
     </MemoryRouter>,
   );
+  act(() => vi.advanceTimersByTime(160));
+  act(() => vi.advanceTimersByTime(650));
+  return view;
 }
 
 function visiblePieces() {
@@ -126,6 +139,8 @@ describe('responsive puzzle tray', () => {
     for (let piece = 0; piece < 9; piece++) place(visiblePieces()[0]!, 3);
     expect(screen.getByAltText('Собранный пазл: Пазл')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Ещё раз' }));
+    act(() => vi.advanceTimersByTime(160));
+    act(() => vi.advanceTimersByTime(650));
     expect(visiblePieces()).toHaveLength(2);
     expect(screen.getByLabelText('Собрано 0 из 9')).toBeDefined();
   });
